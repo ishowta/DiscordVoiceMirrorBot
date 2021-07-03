@@ -1,0 +1,25 @@
+{
+  "name": "discord_voice_mirror_bot",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node-dev src/index.ts",
+    "start": "ts-node src/index.ts"
+  },
+  "keywords": [],
+  "author": "ishowta",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/opus": "^0.5.3",
+    "@types/node": "^16.0.0",
+    "@types/ws": "^7.4.6",
+    "audio-mixer": "^2.1.4",
+    "discord.js": "^12.5.3",
+    "dotenv": "^10.0.0",
+    "ts-node": "^10.0.0",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.3.5",
+    "ws": "^7.5.1"
+  }
+}

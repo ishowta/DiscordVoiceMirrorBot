@@ -1,0 +1,12 @@
+# npm
+/build/
+/node_modules/
+
+# env
+/.env
+/.env.*
+!/.env.sample
+!/.env.*.sample
+
+# misc
+/*.log
