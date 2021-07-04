@@ -24,77 +24,90 @@ import { config } from "dotenv";
 config();
 
 let liveStream: LiveStream | null = null;
-let lived1 = false;
-let lived2 = false;
+let nowLived = false;
 
 async function run() {
   const clients = [new Discord.Client(), new Discord.Client()];
 
-  function regist() {
-    if (liveStream === null) {
+  function regist(from: string, to: string) {
+    liveStream?.unconnectVoice();
+
+    setTimeout(() => {
       const mainCh = clients[0].channels.cache.find(
-        (c) => c.id === process.env.DISCORD_DEFAULT_SPAWN_CHANNEL_ID
+        (c) => c.id === from
       ) as Discord.VoiceChannel;
       const subCh = clients[1].channels.cache.find(
-        (c) => c.id === process.env.DISCORD_DEFAULT_SPAWN_CHANNEL_ID
+        (c) => c.id === to
       ) as Discord.VoiceChannel;
 
       liveStream = new LiveStream(mainCh, subCh);
-    }
 
-    liveStream.connectVoice();
+      liveStream.connectVoice();
+    }, 500);
   }
 
   clients[0].on("ready", () => {
-    console.log("Login! ", clients[0].user ? clients[0].user.username : "");
+    console.log(
+      "Login! ",
+      clients[0].user ? clients[0].user.username : "Unknown"
+    );
   });
   clients[1].on("ready", () => {
-    console.log("Login! ", clients[1].user ? clients[1].user.username : "");
-    //regist();
+    console.log(
+      "Login! ",
+      clients[1].user ? clients[1].user.username : "Unknown"
+    );
   });
 
-  async function on_message_main(message: Discord.Message) {
-    if (message.content.startsWith("<start")) {
-      if (!lived1) {
-        lived1 = true;
-        message.channel.send("おっけー");
-        regist();
-      } else {
-        message.channel.send("もうやってるよ？");
-      }
-    }
-    if (message.content.startsWith("<stop")) {
-      if (lived1) {
-        lived1 = false;
-        message.channel.send("ばいばい");
-        liveStream?.unconnectVoice();
-      } else {
-        message.channel.send("まだやってないよー");
-      }
-    }
-  }
+  clients[0].ws.on("INTERACTION_CREATE" as any, async (interaction) => {
+    const command = interaction.data.name as "join" | "leave";
+    const args = interaction.data.options as {
+      value: string;
+      type: number;
+      name: string;
+    }[];
 
-  async function on_message_sub(message: Discord.Message) {
-    if (message.content.startsWith("<start")) {
-      if (!lived2) {
-        lived2 = true;
-        message.channel.send("おっけー");
-      } else {
-        message.channel.send("もうやってるよ？");
-      }
-    }
-    if (message.content.startsWith("<stop")) {
-      if (lived2) {
-        lived2 = false;
-        message.channel.send("ばいばい");
-      } else {
-        message.channel.send("まだやってないよー");
-      }
-    }
-  }
+    let responseMessage = "";
 
-  clients[0].on("message", async (message) => await on_message_main(message));
-  clients[1].on("message", async (message) => await on_message_sub(message));
+    switch (command) {
+      case "join": {
+        nowLived = true;
+        responseMessage = "おっけー";
+        regist(args[0].value, args[1].value);
+        break;
+      }
+      case "leave": {
+        if (nowLived) {
+          nowLived = false;
+          responseMessage = "ばいばい";
+          liveStream?.unconnectVoice();
+        } else {
+          responseMessage = "まだやってないよー";
+        }
+        break;
+      }
+    }
+
+    const response = {
+      data: {
+        type: 4,
+        data: {
+          content: responseMessage,
+        },
+      },
+    };
+
+    (clients[0] as any).api
+      .interactions(interaction.id, interaction.token)
+      .callback.post(response);
+
+    const subCliCh = clients[1].channels.cache.find(
+      (ch) => ch.id === interaction.channel_id
+    );
+    if (subCliCh && subCliCh.type === "text") {
+      (subCliCh as Discord.TextChannel).send(responseMessage);
+    }
+  });
 
   await clients[0].login(process.env.DISCORD_BOT_1_TOKEN);
   await clients[1].login(process.env.DISCORD_BOT_2_TOKEN);

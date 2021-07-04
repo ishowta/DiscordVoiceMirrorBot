@@ -124,7 +124,6 @@ export default class LiveStream {
       console.error("Error Catch!");
     });
     if (conn2 == null) return false;
-    console.log("join2");
     const mixer = new AudioMixer.Mixer({
       channels: 2,
       bitDepth: 16,
